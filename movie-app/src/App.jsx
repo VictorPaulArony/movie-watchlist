@@ -1,4 +1,4 @@
-import React, { useState, useEffect, } from 'react';
+import React, { useState, useEffect } from 'react';
 import Search from './Components/Search.jsx';
 import './App.css';
 import Spinner from './Components/Spinner.jsx';
@@ -6,6 +6,7 @@ import MovieCard from './Components/MovieCard.jsx';
 import { useDebounce } from 'react-use'
 import Appwrite from './appwrite.jsx';
 import { getTopSearches } from './appwrite.jsx';
+import Watchlist from './Components/Watchlist';
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [topSearches, setTopSearches] = useState([]);
   const [searchType, setSearchType] = useState('movie'); // 'movie' or 'tv'
+  const [activeTab, setActiveTab] = useState('movie'); // 'movie', 'tv', 'watchlist'
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -30,7 +32,23 @@ function App() {
     },
   }
 
+  const OMDB_API_KEY = import.meta.env.VITE_OMDB_API_KEY;
+  const OMDB_BASE_URL = 'https://www.omdbapi.com/';
 
+  // Helper to fetch OMDb data for a movie or TV show
+  const fetchOmdbData = async (title, year) => {
+    if (!title) return null;
+    const url = `${OMDB_BASE_URL}?t=${encodeURIComponent(title)}${year ? `&y=${year}` : ''}&apikey=${OMDB_API_KEY}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (data.Response === 'False') return null;
+      return data;
+    } catch {
+      return null;
+    }
+  };
 
   const fetchMovies = async (query = '', type = searchType) => {
     setLoading(true);
@@ -50,7 +68,26 @@ function App() {
         setMovies([]);
         return;
       }
-      setMovies(data.results || []);
+      // Fetch OMDb data for each movie/TV show
+      const moviesWithOmdb = await Promise.all(
+        (data.results || []).map(async (movie) => {
+          const omdbData = await fetchOmdbData(movie.title || movie.name, movie.release_date ? movie.release_date.split('-')[0] : undefined);
+          let actors = [];
+          let imdbRating = null;
+          let rtRating = null;
+          if (omdbData) {
+            // Actors is a comma-separated string
+            actors = omdbData.Actors ? omdbData.Actors.split(',').map(name => ({ name: name.trim() })) : [];
+            imdbRating = omdbData.imdbRating && omdbData.imdbRating !== 'N/A' ? omdbData.imdbRating : null;
+            if (omdbData.Ratings) {
+              const rt = omdbData.Ratings.find(r => r.Source === 'Rotten Tomatoes');
+              rtRating = rt ? rt.Value : null;
+            }
+          }
+          return { ...movie, actors, imdbRating, rtRating };
+        })
+      );
+      setMovies(moviesWithOmdb);
 
       if (query && data.results.length > 0) {
         await Appwrite(query, data.results[0]);
@@ -73,12 +110,32 @@ function App() {
   };
 
   useEffect(() => {
-    fetchMovies(debouncedSearchTerm, searchType);
-  }, [debouncedSearchTerm, searchType]);
+    if (activeTab === 'movie' || activeTab === 'tv') {
+      setSearchType(activeTab);
+      fetchMovies(debouncedSearchTerm, activeTab);
+    }
+  }, [debouncedSearchTerm, activeTab]);
 
   useEffect(() => {
     loadTrendingMovies();
   }, []);
+
+  // Add to watchlist helper
+  const WATCHLIST_KEY = 'movie_watchlist';
+  const getWatchlist = () => {
+    const data = localStorage.getItem(WATCHLIST_KEY);
+    return data ? JSON.parse(data) : [];
+  };
+  const setWatchlist = (list) => {
+    localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+  };
+  const addToWatchlist = (movie) => {
+    const current = getWatchlist();
+    if (!current.find(item => item.id === movie.id)) {
+      const updated = [...current, { ...movie, watched: false }];
+      setWatchlist(updated);
+    }
+  };
 
   return (
     <main className="App">
@@ -86,7 +143,6 @@ function App() {
       <div className="blur-background">
         <div className="blur-overlay"></div>
       </div>
-
       <div className='container relative z-10'>
         <div className='content-wrapper'>
           <header className='flex flex-col items-center gap-4'>
@@ -102,62 +158,66 @@ function App() {
             </div>
             <div className="flex gap-4 items-center mb-2">
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${searchType === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => setSearchType('movie')}
+                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => { setActiveTab('movie'); }}
               >
                 Movies
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${searchType === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => setSearchType('tv')}
+                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => { setActiveTab('tv'); }}
               >
                 TV Shows
               </button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'watchlist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setActiveTab('watchlist')}
+              >
+                My Watchlist
+              </button>
             </div>
-            <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
+            {activeTab !== 'watchlist' && (
+              <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
+            )}
           </header>
 
-
-          {topSearches.length > 0 && (
-            <section className='top-searches mx-0 my-auto p-4'>
-              <h2 className='text-xl md:text-2xl mb-4 font-bold text-center text-white'>Top Searches</h2>
-
-              <ul className='flex flex-wrap gap-2 justify-center md:gap-4 lg:flex-nowrap'>
-                {topSearches.map((movie, index) => (
-                  <li key={movie.id} className='flex flex-row gap-1 items-center'>
-                    {/* Styled Number Index */}
-                    <span className='text-2xl md:text-4xl font-extrabold text-amber-600'>{index + 1}</span>
-
-                    {/* Movie Poster */}
-                    <img
-                      className='w-full max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
-                      src={movie.poster_url ? `https://image.tmdb.org/t/p/w500${movie.poster_url}` : './src/assets/poster.png'}
-                      alt={movie.title}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
+          {activeTab === 'watchlist' ? (
+            <Watchlist />
+          ) : (
+            <>
+              {topSearches.length > 0 && (
+                <section className='top-searches mx-0 my-auto p-4'>
+                  <h2 className='text-xl md:text-2xl mb-4 font-bold text-center text-white'>Top Searches</h2>
+                  <ul className='flex flex-wrap gap-2 justify-center md:gap-4 lg:flex-nowrap'>
+                    {topSearches.map((movie, index) => (
+                      <li key={movie.id || index} className='flex flex-row gap-1 items-center'>
+                        <span className='text-2xl md:text-4xl font-extrabold text-amber-600'>{index + 1}</span>
+                        <img
+                          className='w-full max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
+                          src={movie.poster_url ? `https://image.tmdb.org/t/p/w500${movie.poster_url}` : './src/assets/poster.png'}
+                          alt={movie.title}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <section className='all-movies'>
+                <h2 className='mt-5 p-5 text-3xl font-bold text-center text-amber-50'>All {activeTab === 'movie' ? 'Movies' : 'TV Shows'}</h2>
+                {isloading ? (
+                  <><Spinner /></>
+                ) : errorMessage ? (
+                  <p className='text-red-500 text-center'>Error {errorMessage}</p>
+                ) : (
+                  <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                    {movies.map((movie) => (
+                      <MovieCard key={movie.id || movie.title || movie.name} movie={movie} actors={movie.actors} imdbRating={movie.imdbRating} rtRating={movie.rtRating} onAddToWatchlist={() => addToWatchlist(movie)} />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
           )}
-
-          <section className='all-movies'>
-            <h2 className='mt-5 p-5 text-3xl font-bold text-center text-amber-50'>All Movies</h2>
-            {isloading ? (
-              <>
-                <Spinner />
-              </>
-            ) : errorMessage ? (
-              <p className='text-red-500 text-center'>Error {errorMessage}</p>
-            ) : (
-              <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-                {movies.map((movie) => (
-
-                  <MovieCard key={movie.id} movie={movie} />
-                ))}
-              </ul>
-            )}
-
-          </section>
         </div>
       </div>
     </main>
