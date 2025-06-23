@@ -16,6 +16,7 @@ function App() {
   const [isloading, setLoading] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [topSearches, setTopSearches] = useState([]);
+  const [searchType, setSearchType] = useState('movie'); // 'movie' or 'tv'
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -31,24 +32,21 @@ function App() {
 
 
 
-  const fetchMovies = async (query = '') => {
+  const fetchMovies = async (query = '', type = searchType) => {
     setLoading(true);
     setErrorMessage('');
     try {
       const endpoint = query
-        ? `${API_BASE_URL}/search/movie?query=${encodeURI(query)}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+        ? `${API_BASE_URL}/search/${type}?query=${encodeURI(query)}`
+        : `${API_BASE_URL}/discover/${type}?sort_by=popularity.desc`;
 
       const response = await fetch(endpoint, API_OPTIONS);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      // console.log(response)
-
       const data = await response.json();
-      // console.log(data)
       if (!data.response === false) {
-        setErrorMessage('Failed to fetch movies: ' + data.Error);
+        setErrorMessage('Failed to fetch results: ' + data.Error);
         setMovies([]);
         return;
       }
@@ -57,9 +55,8 @@ function App() {
       if (query && data.results.length > 0) {
         await Appwrite(query, data.results[0]);
       }
-
     } catch (error) {
-      console.error('Error fetching movies:', error);
+      console.error('Error fetching results:', error);
       setErrorMessage(error.message);
     } finally {
       setLoading(false);
@@ -76,10 +73,8 @@ function App() {
   };
 
   useEffect(() => {
-    console.log(debouncedSearchTerm)
-    console.log(searchItem)
-    fetchMovies(debouncedSearchTerm);
-  }, [searchItem]);
+    fetchMovies(debouncedSearchTerm, searchType);
+  }, [debouncedSearchTerm, searchType]);
 
   useEffect(() => {
     loadTrendingMovies();
@@ -105,7 +100,21 @@ function App() {
             <div className='text-container backdrop-blur-sm bg-white/30 dark:bg-black/30 p-6 rounded-xl'>
               <h1 className='text-5xl font-bold text-center text-amber-600'>Movie Shop</h1>
             </div>
-            <Search searchItem={searchItem} setSearchTerm={setSearchTerm} />
+            <div className="flex gap-4 items-center mb-2">
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold ${searchType === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setSearchType('movie')}
+              >
+                Movies
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold ${searchType === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setSearchType('tv')}
+              >
+                TV Shows
+              </button>
+            </div>
+            <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
           </header>
 
 
