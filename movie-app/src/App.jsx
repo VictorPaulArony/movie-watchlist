@@ -231,7 +231,7 @@ function App() {
       </div>
       {/* Full-bleed Hero Section */}
       {heroItem && (
-        <section className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] max-w-none mb-0 z-20">
+        <section className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] max-w-none mb-20 z-20">
           <div className="relative w-full overflow-hidden shadow-xl bg-black/60">
             <img
               src={heroItem.backdrop_path ? `https://image.tmdb.org/t/p/original${heroItem.backdrop_path}` : heroItem.poster_path ? `https://image.tmdb.org/t/p/w500${heroItem.poster_path}` : '/src/assets/poster.png'}
