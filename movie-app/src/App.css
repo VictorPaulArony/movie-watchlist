@@ -3,17 +3,19 @@
 @layer components {
   .App {
     @apply min-h-screen w-full relative overflow-hidden;
-    @apply bg-gradient-to-br from-purple-950 via-blue-900 to-black;  }
+    @apply bg-black; 
+   }
 
   /* Blur Background */
   .blur-background {
     @apply fixed inset-0 z-0;
+    @apply bg-gradient-to-b from-black to-gray-950;
   }
 
   .blur-overlay {
     @apply absolute inset-0;
     @apply bg-[url('/src/assets/poster.png')] bg-center bg-cover;
-    @apply blur-lg opacity-40;
+    @apply blur-lg opacity-5;
     transform: scale(1.1);
   }
 
