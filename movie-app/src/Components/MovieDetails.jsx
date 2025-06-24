@@ -82,7 +82,7 @@ const MovieDetails = () => {
         <div className="flex-1 space-y-2">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <h2 className="text-2xl font-bold text-amber-600">{details.title || details.name}</h2>
-            <button onClick={handleThemeToggle} className="px-3 py-1 rounded bg-gray-700 text-white text-sm">Toggle Theme</button>
+            {/* <button onClick={handleThemeToggle} className="px-3 py-1 rounded bg-gray-700 text-white text-sm">Toggle Theme</button> */}
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <span className="bg-amber-600 text-white px-2 py-1 rounded text-xs font-bold">{details.release_date || details.first_air_date}</span>
