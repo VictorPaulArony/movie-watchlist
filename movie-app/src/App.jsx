@@ -10,6 +10,7 @@ import Watchlist from './Components/Watchlist';
 import RecommendationEngine from './Components/RecommendationEngine';
 import GenreFilter from './Components/GenreFilter';
 import CategoryBrowser from './Components/CategoryBrowser';
+import Pagination from './Components/Pagination';
 
 function App() {
 
@@ -24,6 +25,8 @@ function App() {
   const [activeTab, setActiveTab] = useState('movie'); // 'movie', 'tv', 'watchlist', 'recommendations'
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -55,41 +58,36 @@ function App() {
     }
   };
 
-  const fetchMovies = async (query = '', type = searchType, genre = selectedGenre, category = selectedCategory) => {
+  const fetchMovies = async (query = '', type = searchType, genre = selectedGenre, category = selectedCategory, page = currentPage) => {
     setLoading(true);
     setErrorMessage('');
     try {
       let endpoint;
       
       if (query) {
-        // Search endpoint
-        endpoint = `${API_BASE_URL}/search/${type}?query=${encodeURI(query)}`;
+        endpoint = `${API_BASE_URL}/search/${type}?query=${encodeURI(query)}&page=${page}`;
       } else if (genre) {
-        // Genre-based discovery endpoint
-        endpoint = `${API_BASE_URL}/discover/${type}?with_genres=${genre.id}&sort_by=popularity.desc`;
+        endpoint = `${API_BASE_URL}/discover/${type}?with_genres=${genre.id}&sort_by=popularity.desc&page=${page}`;
       } else if (category) {
-        // Category-based endpoint
         if (category.id === 'trending') {
-          endpoint = `${API_BASE_URL}/trending/${type}/week`;
+          endpoint = `${API_BASE_URL}/trending/${type}/week?page=${page}`;
         } else if (category.id === 'popular') {
-          endpoint = `${API_BASE_URL}/${type}/popular`;
+          endpoint = `${API_BASE_URL}/${type}/popular?page=${page}`;
         } else if (category.id === 'top_rated') {
-          endpoint = `${API_BASE_URL}/${type}/top_rated`;
+          endpoint = `${API_BASE_URL}/${type}/top_rated?page=${page}`;
         } else if (category.id === 'upcoming' && type === 'movie') {
-          endpoint = `${API_BASE_URL}/movie/upcoming`;
+          endpoint = `${API_BASE_URL}/movie/upcoming?page=${page}`;
         } else if (category.id === 'now_playing' && type === 'movie') {
-          endpoint = `${API_BASE_URL}/movie/now_playing`;
+          endpoint = `${API_BASE_URL}/movie/now_playing?page=${page}`;
         } else if (category.id === 'on_the_air' && type === 'tv') {
-          endpoint = `${API_BASE_URL}/tv/on_the_air`;
+          endpoint = `${API_BASE_URL}/tv/on_the_air?page=${page}`;
         } else if (category.id === 'airing_today' && type === 'tv') {
-          endpoint = `${API_BASE_URL}/tv/airing_today`;
+          endpoint = `${API_BASE_URL}/tv/airing_today?page=${page}`;
         } else {
-          // Fallback to popular
-          endpoint = `${API_BASE_URL}/${type}/popular`;
+          endpoint = `${API_BASE_URL}/${type}/popular?page=${page}`;
         }
       } else {
-        // Default popular content endpoint
-        endpoint = `${API_BASE_URL}/discover/${type}?sort_by=popularity.desc`;
+        endpoint = `${API_BASE_URL}/discover/${type}?sort_by=popularity.desc&page=${page}`;
       }
 
       const response = await fetch(endpoint, API_OPTIONS);
@@ -97,6 +95,7 @@ function App() {
         throw new Error('Network response was not ok');
       }
       const data = await response.json();
+      setTotalPages(data.total_pages ? Math.min(data.total_pages, 500) : 1); // TMDB max 500
       if (!data.response === false) {
         setErrorMessage('Failed to fetch results: ' + data.Error);
         setMovies([]);
@@ -164,18 +163,25 @@ function App() {
   useEffect(() => {
     if (activeTab === 'movie' || activeTab === 'tv') {
       setSearchType(activeTab);
-      // Reset filters when switching between movie and tv
       setSelectedGenre(null);
       setSelectedCategory(null);
-      fetchMovies(debouncedSearchTerm, activeTab, null, null);
+      setCurrentPage(1);
+      fetchMovies(debouncedSearchTerm, activeTab, null, null, 1);
     }
   }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'movie' || activeTab === 'tv') {
-      fetchMovies(debouncedSearchTerm, searchType, selectedGenre, selectedCategory);
+      setCurrentPage(1);
+      fetchMovies(debouncedSearchTerm, searchType, selectedGenre, selectedCategory, 1);
     }
   }, [debouncedSearchTerm, selectedGenre, selectedCategory]);
+
+  useEffect(() => {
+    if (activeTab === 'movie' || activeTab === 'tv') {
+      fetchMovies(debouncedSearchTerm, searchType, selectedGenre, selectedCategory, currentPage);
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     loadTrendingMovies();
@@ -204,40 +210,40 @@ function App() {
       <div className="blur-background">
         <div className="blur-overlay"></div>
       </div>
-      <div className='container relative z-10'>
-        <div className='content-wrapper'>
-          <header className='flex flex-col items-center gap-4'>
-            <div className='image-container'>
+      <div className='container relative z-10 px-2 sm:px-4'>
+        <div className='content-wrapper py-4 sm:py-8 md:py-12'>
+          <header className='flex flex-col items-center gap-4 w-full'>
+            <div className='image-container w-full flex justify-center mb-4'>
               {/* <img
                 src='/src/assets/poster.png'
                 alt='poster'
                 className='w-90 max-w-full h-auto rounded-lg shadow-lg'
               /> */}
             </div>
-            <div className='text-container backdrop-blur-sm bg-white/30 dark:bg-black/30 p-6 rounded-xl'>
-              <h1 className='text-5xl font-bold text-center text-amber-600'>Movie Shop</h1>
+            <div className='text-container backdrop-blur-sm bg-white/30 dark:bg-black/30 p-4 sm:p-6 rounded-xl w-full max-w-2xl mx-auto'>
+              <h1 className='text-3xl sm:text-5xl font-bold text-center text-amber-600'>Movie Shop</h1>
             </div>
-            <div className="flex gap-4 items-center mb-2">
+            <div className="flex flex-wrap gap-2 sm:gap-4 items-center mb-2 w-full justify-center">
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                 onClick={() => { setActiveTab('movie'); }}
               >
                 Movies
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                 onClick={() => { setActiveTab('tv'); }}
               >
                 TV Shows
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'watchlist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'watchlist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                 onClick={() => setActiveTab('watchlist')}
               >
                 My Watchlist
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'recommendations' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'recommendations' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                 onClick={() => setActiveTab('recommendations')}
               >
                 Recommendations
@@ -276,7 +282,7 @@ function App() {
                       <li key={movie.id || index} className='flex flex-row gap-1 items-center'>
                         <span className='text-2xl md:text-4xl font-extrabold text-amber-600'>{index + 1}</span>
                         <img
-                          className='w-full max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
+                          className='w-full max-w-[80px] sm:max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
                           src={movie.poster_url ? `https://image.tmdb.org/t/p/w500${movie.poster_url}` : './src/assets/poster.png'}
                           alt={movie.title}
                         />
@@ -286,7 +292,7 @@ function App() {
                 </section>
               )}
               <section className='all-movies'>
-                <h2 className='mt-5 p-5 text-3xl font-bold text-center text-amber-50'>
+                <h2 className='mt-5 p-5 text-2xl sm:text-3xl font-bold text-center text-amber-50'>
                   {selectedGenre 
                     ? `${selectedGenre.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
                     : selectedCategory
@@ -301,11 +307,14 @@ function App() {
                 ) : errorMessage ? (
                   <p className='text-red-500 text-center'>Error {errorMessage}</p>
                 ) : (
-                  <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  <>
+                  <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
                     {movies.map((movie) => (
                       <MovieCard key={movie.id || movie.title || movie.name} movie={movie} actors={movie.actors} imdbRating={movie.imdbRating} rtRating={movie.rtRating} onAddToWatchlist={() => addToWatchlist(movie)} />
                     ))}
                   </ul>
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                  </>
                 )}
               </section>
             </>
