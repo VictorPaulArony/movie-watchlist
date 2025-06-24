@@ -10,6 +10,13 @@ A modern React-based movie watchlist application with advanced recommendation en
 - Real-time search with debounced input
 - Support for both movies and TV shows
 
+### 🎭 **Genre-Based Filtering & Category Browsing**
+- **Genre Filtering**: Filter movies and TV shows by specific genres
+- **Category Browsing**: Browse content by categories like Popular, Top Rated, Upcoming, etc.
+- **Dynamic Content**: Different categories for movies (Upcoming, Now Playing) and TV shows (On The Air, Airing Today)
+- **Interactive UI**: Visual genre and category buttons with smooth transitions
+- **Smart Filtering**: Automatically clears search when filters are applied
+
 ### 📋 **Watchlist Management**
 - Add movies to personal watchlist
 - Mark movies as watched/unwatched
@@ -35,6 +42,28 @@ A modern React-based movie watchlist application with advanced recommendation en
 - Dark theme with amber accents
 - Smooth animations and transitions
 - Mobile-friendly interface
+
+## Genre & Category Features
+
+The application now includes comprehensive filtering and browsing capabilities:
+
+### **Genre Filtering**
+- **Movie Genres**: Action, Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Fantasy, Horror, Mystery, Romance, Sci-Fi, Thriller, War, Western
+- **TV Show Genres**: Action & Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Kids, Mystery, News, Reality, Sci-Fi & Fantasy, Soap, Talk, War & Politics, Western
+- **Visual Feedback**: Selected genres are highlighted with amber color and scale effect
+- **Easy Clearing**: One-click option to clear genre filters
+
+### **Category Browsing**
+- **Movies**: Popular, Top Rated, Upcoming, Now Playing, Trending
+- **TV Shows**: Popular, Top Rated, On The Air, Airing Today, Trending
+- **Icons**: Each category has a distinctive emoji icon for easy recognition
+- **Smart Categories**: Different categories available based on content type (movie vs TV show)
+
+### **Filter Interaction**
+- **Mutual Exclusion**: Genre and category filters work independently (selecting one clears the other)
+- **Search Integration**: Filters automatically clear search terms for better UX
+- **Dynamic Headers**: Page headers update to show current filter/category selection
+- **Responsive Design**: All filter components work seamlessly on mobile and desktop
 
 ## Recommendation Engine Features
 
@@ -99,10 +128,12 @@ npm run dev
 ## Usage
 
 1. **Browse Movies/TV Shows**: Use the Movies and TV Shows tabs to discover content
-2. **Search**: Use the search bar to find specific movies or shows
-3. **Add to Watchlist**: Click the "Add to Watchlist" button on any movie card
-4. **Manage Watchlist**: Go to "My Watchlist" to manage your saved movies
-5. **Get Recommendations**: Visit the "Recommendations" tab for personalized suggestions
+2. **Filter by Genre**: Use the genre filter buttons to browse content by specific genres
+3. **Browse by Category**: Use category buttons to explore Popular, Top Rated, Upcoming content, etc.
+4. **Search**: Use the search bar to find specific movies or shows
+5. **Add to Watchlist**: Click the "Add to Watchlist" button on any movie card
+6. **Manage Watchlist**: Go to "My Watchlist" to manage your saved movies
+7. **Get Recommendations**: Visit the "Recommendations" tab for personalized suggestions
 
 ## Technology Stack
 
@@ -123,6 +154,8 @@ src/
 │   ├── Watchlist.jsx          # Watchlist management
 │   ├── RecommendationEngine.jsx # AI recommendation system
 │   ├── PreferenceChart.jsx    # Preference visualization
+│   ├── GenreFilter.jsx        # Genre-based filtering
+│   ├── CategoryBrowser.jsx    # Category browsing
 │   └── Spinner.jsx            # Loading component
 ├── App.jsx                    # Main application component
 ├── appwrite.jsx              # API integration
