@@ -54,14 +54,13 @@ const GenreFilter = ({ searchType, onGenreChange, selectedGenre }) => {
   }
 
   return (
-    <div className="genre-filter-container mb-6">
-      <div className="flex flex-wrap items-center gap-3 justify-center">
-        <span className="text-white font-semibold text-lg">Filter by Genre:</span>
-        
+    <div className="genre-filter-container mb-6 px-2">
+      <div className="flex flex-nowrap md:flex-wrap items-center gap-2 md:gap-3 justify-start md:justify-center overflow-x-auto scrollbar-thin scrollbar-thumb-amber-600 pb-2">
+        <span className="text-white font-semibold text-base md:text-lg shrink-0">Filter by Genre:</span>
         {/* Clear Filter Button */}
         <button
           onClick={clearFilter}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm md:text-base ${
             selectedGenre === null
               ? 'bg-amber-600 text-white shadow-lg'
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
@@ -69,13 +68,12 @@ const GenreFilter = ({ searchType, onGenreChange, selectedGenre }) => {
         >
           All {searchType === 'movie' ? 'Movies' : 'TV Shows'}
         </button>
-
         {/* Genre Buttons */}
         {genres.map((genre) => (
           <button
             key={genre.id}
             onClick={() => handleGenreClick(genre)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm md:text-base whitespace-nowrap ${
               selectedGenre?.id === genre.id
                 ? 'bg-amber-600 text-white shadow-lg transform scale-105'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white hover:scale-105'
@@ -85,7 +83,6 @@ const GenreFilter = ({ searchType, onGenreChange, selectedGenre }) => {
           </button>
         ))}
       </div>
-
       {/* Selected Genre Display */}
       {selectedGenre && (
         <div className="mt-4 text-center">

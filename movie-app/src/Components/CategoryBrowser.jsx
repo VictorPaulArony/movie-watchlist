@@ -28,14 +28,14 @@ const CategoryBrowser = ({ searchType, onCategoryChange, selectedCategory }) => 
   };
 
   return (
-    <div className="category-browser-container mb-6">
-      <div className="flex flex-wrap items-center gap-3 justify-center">
-        <span className="text-white font-semibold text-lg">Browse by Category:</span>
+    <div className="category-browser-container mb-6 px-2">
+      <div className="flex flex-nowrap md:flex-wrap items-center gap-2 md:gap-3 justify-start md:justify-center overflow-x-auto scrollbar-thin scrollbar-thumb-blue-600 pb-2">
+        <span className="text-white font-semibold text-base md:text-lg shrink-0">Browse by Category:</span>
         
         {/* Clear Category Button */}
         <button
           onClick={clearCategory}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm md:text-base ${
             selectedCategory === null
               ? 'bg-blue-600 text-white shadow-lg'
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
@@ -49,7 +49,7 @@ const CategoryBrowser = ({ searchType, onCategoryChange, selectedCategory }) => 
           <button
             key={category.id}
             onClick={() => handleCategoryClick(category)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm md:text-base whitespace-nowrap ${
               selectedCategory?.id === category.id
                 ? 'bg-blue-600 text-white shadow-lg transform scale-105'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white hover:scale-105'
