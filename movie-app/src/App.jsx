@@ -8,6 +8,8 @@ import Appwrite from './appwrite.jsx';
 import { getTopSearches } from './appwrite.jsx';
 import Watchlist from './Components/Watchlist';
 import RecommendationEngine from './Components/RecommendationEngine';
+import GenreFilter from './Components/GenreFilter';
+import CategoryBrowser from './Components/CategoryBrowser';
 
 function App() {
 
@@ -20,6 +22,8 @@ function App() {
   const [topSearches, setTopSearches] = useState([]);
   const [searchType, setSearchType] = useState('movie'); // 'movie' or 'tv'
   const [activeTab, setActiveTab] = useState('movie'); // 'movie', 'tv', 'watchlist', 'recommendations'
+  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -51,13 +55,42 @@ function App() {
     }
   };
 
-  const fetchMovies = async (query = '', type = searchType) => {
+  const fetchMovies = async (query = '', type = searchType, genre = selectedGenre, category = selectedCategory) => {
     setLoading(true);
     setErrorMessage('');
     try {
-      const endpoint = query
-        ? `${API_BASE_URL}/search/${type}?query=${encodeURI(query)}`
-        : `${API_BASE_URL}/discover/${type}?sort_by=popularity.desc`;
+      let endpoint;
+      
+      if (query) {
+        // Search endpoint
+        endpoint = `${API_BASE_URL}/search/${type}?query=${encodeURI(query)}`;
+      } else if (genre) {
+        // Genre-based discovery endpoint
+        endpoint = `${API_BASE_URL}/discover/${type}?with_genres=${genre.id}&sort_by=popularity.desc`;
+      } else if (category) {
+        // Category-based endpoint
+        if (category.id === 'trending') {
+          endpoint = `${API_BASE_URL}/trending/${type}/week`;
+        } else if (category.id === 'popular') {
+          endpoint = `${API_BASE_URL}/${type}/popular`;
+        } else if (category.id === 'top_rated') {
+          endpoint = `${API_BASE_URL}/${type}/top_rated`;
+        } else if (category.id === 'upcoming' && type === 'movie') {
+          endpoint = `${API_BASE_URL}/movie/upcoming`;
+        } else if (category.id === 'now_playing' && type === 'movie') {
+          endpoint = `${API_BASE_URL}/movie/now_playing`;
+        } else if (category.id === 'on_the_air' && type === 'tv') {
+          endpoint = `${API_BASE_URL}/tv/on_the_air`;
+        } else if (category.id === 'airing_today' && type === 'tv') {
+          endpoint = `${API_BASE_URL}/tv/airing_today`;
+        } else {
+          // Fallback to popular
+          endpoint = `${API_BASE_URL}/${type}/popular`;
+        }
+      } else {
+        // Default popular content endpoint
+        endpoint = `${API_BASE_URL}/discover/${type}?sort_by=popularity.desc`;
+      }
 
       const response = await fetch(endpoint, API_OPTIONS);
       if (!response.ok) {
@@ -110,12 +143,39 @@ function App() {
     }
   };
 
+  // Handle genre selection
+  const handleGenreChange = (genre) => {
+    setSelectedGenre(genre);
+    setSelectedCategory(null); // Clear category when genre is selected
+    // Clear search when genre is selected
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+  };
+
+  // Handle category selection
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    setSelectedGenre(null); // Clear genre when category is selected
+    // Clear search when category is selected
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+  };
+
   useEffect(() => {
     if (activeTab === 'movie' || activeTab === 'tv') {
       setSearchType(activeTab);
-      fetchMovies(debouncedSearchTerm, activeTab);
+      // Reset filters when switching between movie and tv
+      setSelectedGenre(null);
+      setSelectedCategory(null);
+      fetchMovies(debouncedSearchTerm, activeTab, null, null);
     }
-  }, [debouncedSearchTerm, activeTab]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'movie' || activeTab === 'tv') {
+      fetchMovies(debouncedSearchTerm, searchType, selectedGenre, selectedCategory);
+    }
+  }, [debouncedSearchTerm, selectedGenre, selectedCategory]);
 
   useEffect(() => {
     loadTrendingMovies();
@@ -194,7 +254,21 @@ function App() {
             <RecommendationEngine />
           ) : (
             <>
-              {topSearches.length > 0 && (
+              {/* Category Browser Component */}
+              <CategoryBrowser 
+                searchType={searchType} 
+                onCategoryChange={handleCategoryChange} 
+                selectedCategory={selectedCategory}
+              />
+              
+              {/* Genre Filter Component */}
+              <GenreFilter 
+                searchType={searchType} 
+                onGenreChange={handleGenreChange} 
+                selectedGenre={selectedGenre}
+              />
+              
+              {topSearches.length > 0 && !selectedGenre && !selectedCategory && !debouncedSearchTerm && (
                 <section className='top-searches mx-0 my-auto p-4'>
                   <h2 className='text-xl md:text-2xl mb-4 font-bold text-center text-white'>Top Searches</h2>
                   <ul className='flex flex-wrap gap-2 justify-center md:gap-4 lg:flex-nowrap'>
@@ -212,7 +286,16 @@ function App() {
                 </section>
               )}
               <section className='all-movies'>
-                <h2 className='mt-5 p-5 text-3xl font-bold text-center text-amber-50'>All {activeTab === 'movie' ? 'Movies' : 'TV Shows'}</h2>
+                <h2 className='mt-5 p-5 text-3xl font-bold text-center text-amber-50'>
+                  {selectedGenre 
+                    ? `${selectedGenre.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                    : selectedCategory
+                      ? `${selectedCategory.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                      : debouncedSearchTerm 
+                        ? `Search Results for "${debouncedSearchTerm}"`
+                        : `All ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                  }
+                </h2>
                 {isloading ? (
                   <><Spinner /></>
                 ) : errorMessage ? (
