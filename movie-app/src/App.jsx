@@ -11,6 +11,8 @@ import RecommendationEngine from './Components/RecommendationEngine';
 import GenreFilter from './Components/GenreFilter';
 import CategoryBrowser from './Components/CategoryBrowser';
 import Pagination from './Components/Pagination';
+import { Routes, Route } from 'react-router-dom';
+import MovieDetails from './Components/MovieDetails';
 
 function App() {
 
@@ -27,6 +29,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [heroItem, setHeroItem] = useState(null);
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -187,6 +190,22 @@ function App() {
     loadTrendingMovies();
   }, []);
 
+  // Fetch most popular movie/tv for hero section
+  useEffect(() => {
+    const fetchHero = async () => {
+      try {
+        const endpoint = `${API_BASE_URL}/${searchType}/popular?page=1`;
+        const response = await fetch(endpoint, API_OPTIONS);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          setHeroItem(data.results[0]);
+        }
+      } catch {}
+    };
+    fetchHero();
+  }, [searchType]);
+
   // Add to watchlist helper
   const WATCHLIST_KEY = 'movie_watchlist';
   const getWatchlist = () => {
@@ -210,115 +229,145 @@ function App() {
       <div className="blur-background">
         <div className="blur-overlay"></div>
       </div>
-      <div className='container relative z-10 px-2 sm:px-4'>
-        <div className='content-wrapper py-4 sm:py-8 md:py-12'>
-          <header className='flex flex-col items-center gap-4 w-full'>
-            <div className='image-container w-full flex justify-center mb-4'>
-              {/* <img
-                src='/src/assets/poster.png'
-                alt='poster'
-                className='w-90 max-w-full h-auto rounded-lg shadow-lg'
-              /> */}
+      {/* Full-bleed Hero Section */}
+      {heroItem && (
+        <section className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] max-w-none mb-0 z-20">
+          <div className="relative w-full overflow-hidden shadow-xl bg-black/60">
+            <img
+              src={heroItem.backdrop_path ? `https://image.tmdb.org/t/p/original${heroItem.backdrop_path}` : heroItem.poster_path ? `https://image.tmdb.org/t/p/w500${heroItem.poster_path}` : '/src/assets/poster.png'}
+              alt={heroItem.title || heroItem.name}
+              className="w-full h-[320px] sm:h-[420px] md:h-[520px] object-cover object-center opacity-70"
+            />
+            <div className="absolute inset-0 flex flex-col justify-center items-center bg-gradient-to-t from-black/90 via-black/40 to-transparent px-4 sm:px-8">
+              <h1 className="text-4xl sm:text-6xl font-extrabold text-white drop-shadow-lg text-center mb-4 tracking-tight">
+                Movie Shop
+              </h1>
+              <h2 className="text-xl sm:text-3xl font-bold text-white drop-shadow mb-2 text-center max-w-2xl">
+                {heroItem.title || heroItem.name}
+              </h2>
+              <p className="text-white/90 text-base sm:text-lg max-w-2xl line-clamp-3 mb-4 text-center">{heroItem.overview}</p>
+              <div className="flex gap-2 items-center mb-4">
+                <span className="bg-amber-600 text-white px-2 py-1 rounded text-xs font-bold">{heroItem.release_date || heroItem.first_air_date}</span>
+                <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">{heroItem.vote_average?.toFixed(1)}</span>
+              </div>
+              <div>
+                <a
+                  href={`/details/${searchType}/${heroItem.id}`}
+                  className="inline-block px-6 py-2 bg-amber-600 text-white font-semibold rounded-lg shadow hover:bg-amber-700 transition text-lg"
+                >
+                  View Details
+                </a>
+              </div>
             </div>
-            <div className='text-container backdrop-blur-sm bg-white/30 dark:bg-black/30 p-4 sm:p-6 rounded-xl w-full max-w-2xl mx-auto'>
-              <h1 className='text-3xl sm:text-5xl font-bold text-center text-amber-600'>Movie Shop</h1>
-            </div>
-            <div className="flex flex-wrap gap-2 sm:gap-4 items-center mb-2 w-full justify-center">
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => { setActiveTab('movie'); }}
-              >
-                Movies
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => { setActiveTab('tv'); }}
-              >
-                TV Shows
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'watchlist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => setActiveTab('watchlist')}
-              >
-                My Watchlist
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'recommendations' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                onClick={() => setActiveTab('recommendations')}
-              >
-                Recommendations
-              </button>
-            </div>
-            {activeTab !== 'watchlist' && activeTab !== 'recommendations' && (
-              <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
-            )}
-          </header>
+          </div>
+        </section>
+      )}
+      <div className='container relative z-10 px-2 sm:px-4 -mt-8 sm:-mt-16'>
+        <div className='content-wrapper pt-2 sm:pt-6 md:pt-10'>
+          <Routes>
+            <Route path="/" element={
+              <>
+                <header className='flex flex-col items-center gap-4 w-full'>
+                  <div className="flex flex-wrap gap-2 sm:gap-4 items-center mb-2 w-full justify-center">
+                    <button
+                      className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'movie' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      onClick={() => { setActiveTab('movie'); }}
+                    >
+                      Movies
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'tv' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      onClick={() => { setActiveTab('tv'); }}
+                    >
+                      TV Shows
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'watchlist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      onClick={() => setActiveTab('watchlist')}
+                    >
+                      My Watchlist
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-lg font-semibold w-full sm:w-auto ${activeTab === 'recommendations' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      onClick={() => setActiveTab('recommendations')}
+                    >
+                      Recommendations
+                    </button>
+                  </div>
+                  {activeTab !== 'watchlist' && activeTab !== 'recommendations' && (
+                    <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
+                  )}
+                </header>
 
-          {activeTab === 'watchlist' ? (
-            <Watchlist />
-          ) : activeTab === 'recommendations' ? (
-            <RecommendationEngine />
-          ) : (
-            <>
-              {/* Category Browser Component */}
-              <CategoryBrowser 
-                searchType={searchType} 
-                onCategoryChange={handleCategoryChange} 
-                selectedCategory={selectedCategory}
-              />
-              
-              {/* Genre Filter Component */}
-              <GenreFilter 
-                searchType={searchType} 
-                onGenreChange={handleGenreChange} 
-                selectedGenre={selectedGenre}
-              />
-              
-              {topSearches.length > 0 && !selectedGenre && !selectedCategory && !debouncedSearchTerm && (
-                <section className='top-searches mx-0 my-auto p-4'>
-                  <h2 className='text-xl md:text-2xl mb-4 font-bold text-center text-white'>Top Searches</h2>
-                  <ul className='flex flex-wrap gap-2 justify-center md:gap-4 lg:flex-nowrap'>
-                    {topSearches.map((movie, index) => (
-                      <li key={movie.id || index} className='flex flex-row gap-1 items-center'>
-                        <span className='text-2xl md:text-4xl font-extrabold text-amber-600'>{index + 1}</span>
-                        <img
-                          className='w-full max-w-[80px] sm:max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
-                          src={movie.poster_url ? `https://image.tmdb.org/t/p/w500${movie.poster_url}` : './src/assets/poster.png'}
-                          alt={movie.title}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-              <section className='all-movies'>
-                <h2 className='mt-5 p-5 text-2xl sm:text-3xl font-bold text-center text-amber-50'>
-                  {selectedGenre 
-                    ? `${selectedGenre.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
-                    : selectedCategory
-                      ? `${selectedCategory.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
-                      : debouncedSearchTerm 
-                        ? `Search Results for "${debouncedSearchTerm}"`
-                        : `All ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
-                  }
-                </h2>
-                {isloading ? (
-                  <><Spinner /></>
-                ) : errorMessage ? (
-                  <p className='text-red-500 text-center'>Error {errorMessage}</p>
+                {activeTab === 'watchlist' ? (
+                  <Watchlist />
+                ) : activeTab === 'recommendations' ? (
+                  <RecommendationEngine />
                 ) : (
                   <>
-                  <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-                    {movies.map((movie) => (
-                      <MovieCard key={movie.id || movie.title || movie.name} movie={movie} actors={movie.actors} imdbRating={movie.imdbRating} rtRating={movie.rtRating} onAddToWatchlist={() => addToWatchlist(movie)} />
-                    ))}
-                  </ul>
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                    {/* Category Browser Component */}
+                    <CategoryBrowser 
+                      searchType={searchType} 
+                      onCategoryChange={handleCategoryChange} 
+                      selectedCategory={selectedCategory}
+                    />
+                    
+                    {/* Genre Filter Component */}
+                    <GenreFilter 
+                      searchType={searchType} 
+                      onGenreChange={handleGenreChange} 
+                      selectedGenre={selectedGenre}
+                    />
+                    
+                    {topSearches.length > 0 && !selectedGenre && !selectedCategory && !debouncedSearchTerm && (
+                      <section className='top-searches mx-0 my-auto p-4'>
+                        <h2 className='text-xl md:text-2xl mb-4 font-bold text-center text-white'>Top Searches</h2>
+                        <ul className='flex flex-wrap gap-2 justify-center md:gap-4 lg:flex-nowrap'>
+                          {topSearches.map((movie, index) => (
+                            <li key={movie.id || index} className='flex flex-row gap-1 items-center'>
+                              <span className='text-2xl md:text-4xl font-extrabold text-amber-600'>{index + 1}</span>
+                              <img
+                                className='w-full max-w-[80px] sm:max-w-[100px] md:max-w-[150px] h-auto rounded-lg shadow-lg'
+                                src={movie.poster_url ? `https://image.tmdb.org/t/p/w500${movie.poster_url}` : './src/assets/poster.png'}
+                                alt={movie.title}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    <section className='all-movies'>
+                      <h2 className='mt-5 p-5 text-2xl sm:text-3xl font-bold text-center text-amber-50'>
+                        {selectedGenre 
+                          ? `${selectedGenre.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                          : selectedCategory
+                            ? `${selectedCategory.name} ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                            : debouncedSearchTerm 
+                              ? `Search Results for "${debouncedSearchTerm}"`
+                              : `All ${activeTab === 'movie' ? 'Movies' : 'TV Shows'}`
+                      }
+                      </h2>
+                      {isloading ? (
+                        <><Spinner /></>
+                      ) : errorMessage ? (
+                        <p className='text-red-500 text-center'>Error {errorMessage}</p>
+                      ) : (
+                        <>
+                        <ul className='bg-dark-100 text-black grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+                          {movies.map((movie) => (
+                            <MovieCard key={movie.id || movie.title || movie.name} movie={movie} actors={movie.actors} imdbRating={movie.imdbRating} rtRating={movie.rtRating} onAddToWatchlist={() => addToWatchlist(movie)} />
+                          ))}
+                        </ul>
+                        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                        </>
+                      )}
+                    </section>
                   </>
                 )}
-              </section>
-            </>
-          )}
+              </>
+            } />
+            <Route path="/details/:type/:id" element={<MovieDetails />} />
+          </Routes>
         </div>
       </div>
     </main>
