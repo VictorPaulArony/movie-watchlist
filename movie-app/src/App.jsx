@@ -7,6 +7,7 @@ import { useDebounce } from 'react-use'
 import Appwrite from './appwrite.jsx';
 import { getTopSearches } from './appwrite.jsx';
 import Watchlist from './Components/Watchlist';
+import RecommendationEngine from './Components/RecommendationEngine';
 
 function App() {
 
@@ -18,7 +19,7 @@ function App() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [topSearches, setTopSearches] = useState([]);
   const [searchType, setSearchType] = useState('movie'); // 'movie' or 'tv'
-  const [activeTab, setActiveTab] = useState('movie'); // 'movie', 'tv', 'watchlist'
+  const [activeTab, setActiveTab] = useState('movie'); // 'movie', 'tv', 'watchlist', 'recommendations'
 
   useDebounce(() => setDebouncedSearchTerm(searchItem), 500, [searchItem]);
 
@@ -175,14 +176,22 @@ function App() {
               >
                 My Watchlist
               </button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'recommendations' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setActiveTab('recommendations')}
+              >
+                Recommendations
+              </button>
             </div>
-            {activeTab !== 'watchlist' && (
+            {activeTab !== 'watchlist' && activeTab !== 'recommendations' && (
               <Search searchItem={searchItem} setSearchTerm={setSearchTerm} searchType={searchType} />
             )}
           </header>
 
           {activeTab === 'watchlist' ? (
             <Watchlist />
+          ) : activeTab === 'recommendations' ? (
+            <RecommendationEngine />
           ) : (
             <>
               {topSearches.length > 0 && (
