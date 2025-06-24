@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaSearch } from 'react-icons/fa';
 
-const Search = ({ searchItem, setSearchTerm }) => {
+const Search = ({ searchItem, setSearchTerm, searchType = 'movie' }) => {
     return (
         <div className="relative  w-fit m-auto p-2">
             {/* Wrapper with relative positioning */}
@@ -9,7 +9,7 @@ const Search = ({ searchItem, setSearchTerm }) => {
             {/* Search icon positioned inside the input */}
             <input
                 type="text"
-                placeholder="Search for a movie"
+                placeholder={`Search for a ${searchType === 'movie' ? 'movie' : 'TV show'}`}
                 value={searchItem}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full p-2 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
